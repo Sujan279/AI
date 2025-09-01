@@ -1,7 +1,6 @@
 class VacuumCleanerAgent:
     def __init__(self):
         print("Sujan G E 1BM23CS347")
-        # Initialize rooms: 0 represents dirty, 1 represents clean
         self.rooms = {'Room A': 0, 'Room B': 0}
         self.current_room = 'Room A'
 
@@ -28,7 +27,6 @@ class VacuumCleanerAgent:
     def are_all_rooms_clean(self):
         return all(status == 1 for status in self.rooms.values())
 
-# Main simulation loop
 agent = VacuumCleanerAgent()
 
 while not agent.are_all_rooms_clean():
@@ -41,8 +39,8 @@ while not agent.are_all_rooms_clean():
         agent.move_to_next_room()
     elif user_input == 'clean and move':
         agent.clean_room()
-        if not agent.are_all_rooms_clean(): # Only move if cleaning the current room didn't finish the task
-             agent.move_to_next_room()
+        if not agent.are_all_rooms_clean():
+            agent.move_to_next_room()
     else:
         print("\nInvalid input. Please enter 'clean', 'move', or 'clean and move'.")
 
