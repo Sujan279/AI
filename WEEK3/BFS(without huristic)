@@ -1,83 +1,47 @@
-from collections import deque
+class VacuumCleanerAgent:
+    def __init__(self):
+        print("Sujan G E 1BM23CS347")
+        self.rooms = {'Room A': 0, 'Room B': 0}
+        self.current_room = 'Room A'
 
-GOAL_STATE = ((1, 2, 3),
-              (8, 0, 4),
-              (7, 6, 5))
+    def display_status(self):
+        print("\nCurrent Room:", self.current_room)
+        print("Room Status:", self.rooms)
 
-MOVES = {
-    'UP': (-1, 0),
-    'DOWN': (1, 0),
-    'LEFT': (0, -1),
-    'RIGHT': (0, 1)
-}
+    def clean_room(self):
+        if self.rooms[self.current_room] == 0:
+            print(f"\nCleaning {self.current_room}...")
+            self.rooms[self.current_room] = 1
+            print(f"{self.current_room} is now clean.")
+        else:
+            print(f"\n{self.current_room} is already clean.")
 
-def find_zero(state):
-    for i in range(3):
-        for j in range(3):
-            if state[i][j] == 0:
-                return i, j
+    def move_to_next_room(self):
+        if self.current_room == 'Room A':
+            self.current_room = 'Room B'
+            print("\nMoving to Room B.")
+        elif self.current_room == 'Room B':
+            self.current_room = 'Room A'
+            print("\nMoving to Room A.")
 
-def is_valid_pos(x, y):
-    return 0 <= x < 3 and 0 <= y < 3
+    def are_all_rooms_clean(self):
+        return all(status == 1 for status in self.rooms.values())
 
-def swap_positions(state, pos1, pos2):
-    state_list = [list(row) for row in state]
-    x1, y1 = pos1
-    x2, y2 = pos2
-    state_list[x1][y1], state_list[x2][y2] = state_list[x2][y2], state_list[x1][y1]
-    return tuple(tuple(row) for row in state_list)
+agent = VacuumCleanerAgent()
 
-def get_neighbors(state):
-    neighbors = []
-    x, y = find_zero(state)
-    for move in MOVES.values():
-        new_x, new_y = x + move[0], y + move[1]
-        if is_valid_pos(new_x, new_y):
-            neighbors.append(swap_positions(state, (x, y), (new_x, new_y)))
-    return neighbors
+while not agent.are_all_rooms_clean():
+    agent.display_status()
+    user_input = input("Enter action (clean/move/clean and move): ").lower()
 
-def reconstruct_path(came_from, current):
-    path = [current]
-    while current in came_from:
-        current = came_from[current]
-        path.append(current)
-    path.reverse()
-    return path
-
-def bfs(start_state):
-    queue = deque([start_state])
-    visited = set([start_state])
-    came_from = {}
-
-    while queue:
-        current = queue.popleft()
-        if current == GOAL_STATE:
-            return reconstruct_path(came_from, current)
-        for neighbor in get_neighbors(current):
-            if neighbor not in visited:
-                visited.add(neighbor)
-                came_from[neighbor] = current
-                queue.append(neighbor)
-    return None
-
-def print_state(state):
-    for row in state:
-        print(' '.join(str(x) if x != 0 else '_' for x in row))
-    print()
-
-if __name__ == "__main__":
-    start_state = ((2, 8, 3),
-                   (1, 6, 4),
-                   (7, 0, 5))
-    print("Sujan G E (1BM23CS347)")
-    print("Initial State:")
-    print_state(start_state)
-
-    print("Solving with BFS...")
-    bfs_path = bfs(start_state)
-    if bfs_path:
-        print(f"Solution found in {len(bfs_path) - 1} moves!")
-        for state in bfs_path:
-            print_state(state)
+    if user_input == 'clean':
+        agent.clean_room()
+    elif user_input == 'move':
+        agent.move_to_next_room()
+    elif user_input == 'clean and move':
+        agent.clean_room()
+        if not agent.are_all_rooms_clean():
+            agent.move_to_next_room()
     else:
-        print("No solution found with BFS.")
+        print("\nInvalid input. Please enter 'clean', 'move', or 'clean and move'.")
+
+print("\nAll rooms are clean! Simulation finished.")
