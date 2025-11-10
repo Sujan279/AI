@@ -1,0 +1,164 @@
+from typing import List, Set
+
+class Predicate:
+    def __init__(self, name, args):
+        self.name = name
+        self.args = args
+    def __eq__(self, other):
+        if isinstance(other, str):
+            return self.name == other
+        return self.name == other.name and self.args == other.args
+    def __hash__(self):
+        return hash((self.name, tuple(self.args)))
+    def __repr__(self):
+        return f"{self.name}({', '.join(self.args)})"
+
+def negate(pred):
+    if pred.name.startswith("~"):
+        return Predicate(pred.name[1:], pred.args)
+    else:
+        return Predicate("~" + pred.name, pred.args)
+
+def unify(x, y, subst):
+    if subst is None:
+        return None
+    elif x == y:
+        return subst
+    elif isinstance(x, str) and x[0].islower():
+        return unify_var(x, y, subst)
+    elif isinstance(y, str) and y[0].islower():
+        return unify_var(y, x, subst)
+    elif isinstance(x, Predicate) and isinstance(y, Predicate):
+        if x.name != y.name or len(x.args) != len(y.args):
+            return None
+        new_subst = subst.copy()
+        for a, b in zip(x.args, y.args):
+            new_subst = unify(a, b, new_subst)
+            if new_subst is None:
+                return None
+        return new_subst
+    else:
+        return None
+
+def unify_var(var, x, subst):
+    if var in subst:
+        return unify(subst[var], x, subst)
+  
+    elif isinstance(x, str) and x[0].islower():
+        if x in subst:
+             return unify(var, subst[x], subst)
+        subst[var] = x
+        return subst
+    
+    elif x in subst and isinstance(x, str) and x[0].islower():
+        return unify(var, subst[x], subst)
+    
+  
+    subst[var] = x
+    return subst
+
+def resolution(kb: List[Set[Predicate]], query: Predicate):
+    clauses = kb.copy()
+    clauses.append({negate(query)})
+    
+    print("Initial Clauses:")
+    
+    for idx, c in enumerate(clauses):
+        print(f"C{idx+1}: {c}")
+    print("---")
+    
+    iteration = 0
+    while True:
+        iteration += 1
+        new = []
+        n = len(clauses)
+        
+        clauses_set = set(frozenset(c) for c in clauses)
+
+        for i in range(n):
+            for j in range(i + 1, n):
+                
+                resolvents = resolve(clauses[i], clauses[j])
+                
+                for res in resolvents:
+                    if not res: 
+                        print(f"\nDerived empty clause {{}} from C{i+1} and C{j+1}. Hence, Query is PROVED.")
+                        return True
+                    
+                    froz_res = frozenset(res)
+                    if froz_res not in clauses_set and froz_res not in [frozenset(c) for c in new]:
+                        new.append(res)
+                        
+        if not new:
+            print("\nNo new clauses derived. Query CANNOT be proved.")
+            return False
+        
+        print(f"\nIteration {iteration}: Adding {len(new)} new clauses.")
+        for c in new:
+            clauses.append(c)
+            clauses_set.add(frozenset(c))
+            print(f"C{len(clauses)}: {c}")
+
+
+def resolve(ci: Set[Predicate], cj: Set[Predicate]):
+    resolvents = []
+  
+    for di in ci:
+        for dj in cj:
+        
+            if di.name == "~" + dj.name or "~" + di.name == dj.name:
+                
+               
+                di_prime = di
+                dj_prime = negate(dj) if di.name.startswith("~") else dj
+                
+             
+                subst = unify(di_prime, dj_prime, {})
+                
+                if subst is not None:
+
+                    remaining_i = ci - {di}
+                    remaining_j = cj - {dj}
+
+                    new_clause = remaining_i.union(remaining_j)
+                    
+                    new_clause = {apply_substitution(p, subst) for p in new_clause}
+                  
+                    resolvents.append(new_clause)
+                    
+    return resolvents
+
+def apply_substitution(pred, subst):
+    original_name = pred.name
+    negated = pred.name.startswith("~")
+  
+    base_name = original_name[1:] if negated else original_name
+  
+    new_args = []
+    for arg in pred.args:
+        current_arg = arg
+        while current_arg in subst:
+            current_arg = subst[current_arg]
+        new_args.append(current_arg)
+
+    final_name = "~" + base_name if negated else base_name
+    
+    return Predicate(final_name, new_args)
+
+
+KB = [
+    {Predicate("~American", ["x"]), Predicate("~Weapon", ["y"]), Predicate("~Hostile", ["z"]), Predicate("~Sells", ["x", "y", "z"]), Predicate("Criminal", ["x"])},
+    {Predicate("Enemy", ["A", "America"])},
+    {Predicate("~Enemy", ["v1", "v2"]), Predicate("Hostile", ["v1"])},
+    {Predicate("Missile", ["M"])},
+    {Predicate("Owns", ["A", "M"])},
+    {Predicate("~Missile", ["v3"]), Predicate("Weapon", ["v3"])},
+    {Predicate("~Missile", ["m"]), Predicate("~Owns", ["A", "m"]), Predicate("Sells", ["Robert", "m", "A"])},
+    {Predicate("American", ["Robert"])},
+]
+
+query = Predicate("Criminal", ["Robert"])
+
+print("--- RESOLUTION PROCESS FOR 'Robert is criminal' ---")
+proved = resolution(KB, query)
+print("\nRESULT:", "Query is TRUE (proved by resolution)" if proved else "Query is FALSE (not provable)")
